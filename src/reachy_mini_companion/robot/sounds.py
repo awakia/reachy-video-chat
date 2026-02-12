@@ -47,7 +47,9 @@ class SoundPlayer:
 
         if self.robot is not None:
             try:
-                await asyncio.to_thread(self.robot.media.push_audio_sample, audio)
+                # SDK expects float32 in [-1.0, 1.0]
+                audio_f32 = audio.astype(np.float32) / 32768.0
+                await asyncio.to_thread(self.robot.media.push_audio_sample, audio_f32)
             except Exception as e:
                 logger.warning(f"Failed to play on robot: {e}")
         else:

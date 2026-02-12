@@ -121,7 +121,7 @@ def test_config_smoke_test():
     from reachy_mini_companion.config import load_config
 
     config = load_config()
-    assert config.reachy.host == "reachy2.local"
+    assert config.reachy.connection_mode == "auto"
     assert config.gemini.model == "gemini-2.5-flash-native-audio-preview-12-2025"
     assert config.session.max_duration_sec == 300
     assert config.cost.pricing.input_audio_per_million == 0.70

@@ -1,5 +1,5 @@
 reachy:
-  host: "reachy2.local"
+  connection_mode: "auto"  # "auto", "localhost", or "network"
   simulate: false
 
 wake:

@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Reachy Mini AI Companion")
     parser.add_argument("--config", type=str, help="Path to config YAML override")
-    parser.add_argument("--host", type=str, help="Reachy Mini host address")
+    parser.add_argument(
+        "--connection-mode", type=str, choices=["auto", "localhost", "network"],
+        help="Reachy Mini connection mode",
+    )
     parser.add_argument("--port", type=int, default=7860, help="Web UI port")
     parser.add_argument("--web", dest="web", action="store_true", default=True)
     parser.add_argument("--no-web", dest="web", action="store_false")
@@ -97,10 +100,11 @@ class CompanionApp:
             try:
                 from reachy_mini import ReachyMini
 
-                robot = ReachyMini(host=self.config.reachy.host)
+                mode = self.config.reachy.connection_mode
+                robot = ReachyMini(connection_mode=mode)
                 robot.__enter__()
                 self._robot = robot
-                logger.info(f"Connected to Reachy Mini at {self.config.reachy.host}")
+                logger.info(f"Connected to Reachy Mini (connection_mode={mode})")
             except Exception as e:
                 logger.warning(f"Could not connect to robot: {e}. Running in simulate mode.")
         else:
@@ -330,8 +334,8 @@ def main():
     config = load_config(config_path=args.config)
 
     # Apply CLI overrides
-    if args.host:
-        config.reachy.host = args.host
+    if args.connection_mode:
+        config.reachy.connection_mode = args.connection_mode
     if args.simulate:
         config.reachy.simulate = True
 

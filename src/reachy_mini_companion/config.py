@@ -27,14 +27,13 @@ class SecretSettings(BaseSettings):
     )
 
     google_api_key: str = ""
-    reachy_mini_host: str = ""
 
 
 # --- Nested config sections ---
 
 
 class ReachyConfig(BaseModel):
-    host: str = "reachy2.local"
+    connection_mode: str = "auto"  # "auto", "localhost", or "network"
     simulate: bool = False
 
 
@@ -110,7 +109,6 @@ class AppConfig(BaseModel):
 
     # Secrets (populated from .env / environment)
     google_api_key: str = ""
-    reachy_mini_host: str = ""
 
     @property
     def has_api_key(self) -> bool:
@@ -158,9 +156,6 @@ def load_config(config_path: str | Path | None = None) -> AppConfig:
     # 4. Inject secrets
     if secrets.google_api_key:
         data["google_api_key"] = secrets.google_api_key
-    if secrets.reachy_mini_host:
-        data["reachy_mini_host"] = secrets.reachy_mini_host
-        data.setdefault("reachy", {})["host"] = secrets.reachy_mini_host
 
     return AppConfig(**data)
 

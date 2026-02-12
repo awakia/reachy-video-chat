@@ -29,6 +29,8 @@ class RobotAudioBridge:
         self.config = config
         self._input_rate = config.gemini.input_sample_rate  # 16kHz
         self._output_rate = config.gemini.output_sample_rate  # 24kHz
+        self._recording_started = False
+        self._playing_started = False
 
     async def capture_loop(
         self,
@@ -48,6 +50,11 @@ class RobotAudioBridge:
                 if self.robot is None:
                     await asyncio.sleep(0.1)
                     continue
+
+                # Ensure recording is started
+                if not self._recording_started:
+                    await asyncio.to_thread(self.robot.media.start_recording)
+                    self._recording_started = True
 
                 # Get audio sample from robot (blocking SDK call)
                 audio = await asyncio.to_thread(self.robot.media.get_audio_sample)
@@ -94,6 +101,11 @@ class RobotAudioBridge:
                 if self.robot is None:
                     continue
 
+                # Ensure playback is started
+                if not self._playing_started:
+                    await asyncio.to_thread(self.robot.media.start_playing)
+                    self._playing_started = True
+
                 # Convert bytes to numpy array (24kHz PCM16)
                 audio = np.frombuffer(audio_bytes, dtype=np.int16)
 
@@ -105,8 +117,11 @@ class RobotAudioBridge:
                     )
                     audio = resampled.astype(np.int16)
 
+                # Convert to float32 for SDK (expects float32 in [-1.0, 1.0])
+                audio_f32 = audio.astype(np.float32) / 32768.0
+
                 # Send to robot speaker (blocking SDK call)
-                await asyncio.to_thread(self.robot.media.push_audio_sample, audio)
+                await asyncio.to_thread(self.robot.media.push_audio_sample, audio_f32)
 
             except asyncio.CancelledError:
                 break

@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import logging
 
+import numpy as np
+
 from reachy_mini_companion.robot.expressions import EXPRESSIONS, LOOK_DIRECTIONS
 
 logger = logging.getLogger(__name__)
@@ -129,12 +131,13 @@ class MovementController:
             from reachy_mini import create_head_pose
 
             head_pose = create_head_pose(**(head_kwargs or {}), degrees=True)
-            ant = antennas or [0, 0]
+            ant_deg = antennas or [0, 0]
+            ant_rad = [float(np.deg2rad(a)) for a in ant_deg]
 
             await asyncio.to_thread(
                 self.robot.goto_target,
                 head=head_pose,
-                antennas=ant,
+                antennas=ant_rad,
                 body_yaw=body_yaw,
                 duration=duration,
             )

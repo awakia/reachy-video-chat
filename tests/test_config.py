@@ -17,7 +17,7 @@ from reachy_mini_companion.config import (
 def test_default_config_loads():
     """Default config should load with sensible defaults."""
     config = load_config()
-    assert config.reachy.host == "reachy2.local"
+    assert config.reachy.connection_mode == "auto"
     assert config.gemini.voice == "Aoede"
     assert config.session.max_duration_sec == 300
     assert config.cost.pricing.input_audio_per_million == 0.70
