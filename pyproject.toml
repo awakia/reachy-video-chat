@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reachy-mini-companion"
+version = "0.1.0"
+description = "Hey Reachy - wake-word triggered AI companion for Reachy Mini"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "google-genai>=1.0.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml>=6.0",
+    "gradio>=4.0",
+    "aiosqlite>=0.20.0",
+    "numpy>=1.24",
+    "python-dotenv>=1.0",
+    "soxr>=0.3",
+]
+
+[project.optional-dependencies]
+robot = [
+    "reachy-mini>=0.1.0",
+    "sounddevice>=0.4",
+]
+wake = [
+    "openwakeword>=0.6.0",
+]
+all = [
+    "reachy-mini-companion[robot,wake]",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+reachy-mini-companion = "reachy_mini_companion.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
