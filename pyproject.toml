@@ -26,11 +26,14 @@ robot = [
     "reachy-mini>=0.1.0",
     "sounddevice>=0.4",
 ]
-wake = [
+wake-openwakeword = [
     "openwakeword>=0.6.0",
 ]
+wake-edge-impulse = [
+    "edge_impulse_linux>=1.0.0",
+]
 all = [
-    "reachy-mini-companion[robot,wake]",
+    "reachy-mini-companion[robot,wake-edge-impulse]",
 ]
 dev = [
     "pytest>=7.0",

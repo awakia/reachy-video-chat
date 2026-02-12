@@ -82,5 +82,6 @@ def test_app_config_defaults():
     """AppConfig should have correct defaults even without YAML."""
     config = AppConfig()
     assert config.reachy.simulate is False
-    assert config.wake.threshold == 0.5
+    assert config.wake.threshold == 0.7
+    assert config.wake.backend == "edge_impulse"
     assert config.web_ui.port == 7860

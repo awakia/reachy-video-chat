@@ -7,6 +7,8 @@ import time
 
 import numpy as np
 
+from reachy_mini_companion.wake.base import BaseWakeWordDetector
+
 logger = logging.getLogger(__name__)
 
 FRAME_MS = 80  # openWakeWord expects 80ms frames
@@ -14,7 +16,7 @@ SAMPLE_RATE = 16000
 FRAME_SAMPLES = int(SAMPLE_RATE * FRAME_MS / 1000)  # 1280 samples per frame
 
 
-class WakeWordDetector:
+class OpenWakeWordDetector(BaseWakeWordDetector):
     """Detects wake words in audio streams using openWakeWord."""
 
     def __init__(
@@ -47,7 +49,7 @@ class WakeWordDetector:
                 self._model = Model(
                     wakeword_models=[self.model_name],
                 )
-            logger.info(f"Wake word model loaded: {self.model_name}")
+            logger.info(f"openWakeWord model loaded: {self.model_name}")
         except ImportError:
             logger.warning(
                 "openwakeword not installed. Install with: pip install 'reachy-mini-companion[wake]'"
@@ -103,19 +105,5 @@ class WakeWordDetector:
             self._model.reset()
 
 
-def ensure_wake_word_model(model_name: str) -> str:
-    """Ensure wake word model is available, download if needed.
-
-    Returns the model path or name.
-    """
-    try:
-        import importlib.util
-
-        if importlib.util.find_spec("openwakeword") is None:
-            raise ImportError("openwakeword not installed")
-        # Builtin models are available by name
-        logger.info(f"Using wake word model: {model_name}")
-        return model_name
-    except ImportError:
-        logger.warning("openwakeword not installed")
-        raise
+# Keep old name as alias for backwards compatibility
+WakeWordDetector = OpenWakeWordDetector

@@ -39,9 +39,10 @@ class ReachyConfig(BaseModel):
 
 
 class WakeConfig(BaseModel):
-    model: str = "hey_jarvis"
-    custom_model_path: str | None = None
-    threshold: float = 0.5
+    backend: str = "edge_impulse"  # "edge_impulse" or "openwakeword"
+    model: str = "hey_reachy"  # builtin model name
+    custom_model_path: str | None = None  # path to custom .onnx/.tflite/.eim
+    threshold: float = 0.7
     refractory_sec: float = 3.0
 
 

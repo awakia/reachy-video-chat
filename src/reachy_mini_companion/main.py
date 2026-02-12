@@ -115,17 +115,13 @@ class CompanionApp:
 
         # Wake word detector
         try:
-            from reachy_mini_companion.wake.wake_word import WakeWordDetector
+            from reachy_mini_companion.wake import create_wake_detector
 
-            self._wake_detector = WakeWordDetector(
-                model_name=self.config.wake.model,
-                custom_model_path=self.config.wake.custom_model_path,
-                threshold=self.config.wake.threshold,
-                refractory_sec=self.config.wake.refractory_sec,
-            )
+            self._wake_detector = create_wake_detector(self.config.wake)
             self._wake_detector.load_model()
-        except ImportError:
-            logger.warning("Wake word detection unavailable (openwakeword not installed)")
+            logger.info(f"Wake word backend: {self.config.wake.backend}")
+        except ImportError as e:
+            logger.warning(f"Wake word detection unavailable: {e}")
             self._wake_detector = None
 
         # Transition to SLEEPING
