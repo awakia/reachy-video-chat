@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from reachy_mini_companion.config import PROJECT_ROOT
 

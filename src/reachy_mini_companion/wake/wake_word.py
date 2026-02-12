@@ -36,7 +36,6 @@ class WakeWordDetector:
     def load_model(self) -> None:
         """Load the openWakeWord model."""
         try:
-            import openwakeword
             from openwakeword.model import Model
 
             if self.custom_model_path:
@@ -110,8 +109,10 @@ def ensure_wake_word_model(model_name: str) -> str:
     Returns the model path or name.
     """
     try:
-        import openwakeword
+        import importlib.util
 
+        if importlib.util.find_spec("openwakeword") is None:
+            raise ImportError("openwakeword not installed")
         # Builtin models are available by name
         logger.info(f"Using wake word model: {model_name}")
         return model_name
