@@ -71,6 +71,7 @@ class CompanionApp:
         self._dispatcher = None
         self._tool_declarations = None
         self._wake_detector = None
+        self._sound_player = None
         self._robot = None
 
     async def setup(self) -> None:
@@ -112,6 +113,11 @@ class CompanionApp:
         )
         self._dispatcher = ToolDispatcher(self._controller)
         self._tool_declarations = create_tool_declarations()
+
+        # Sound player
+        from reachy_mini_companion.robot.sounds import SoundPlayer
+
+        self._sound_player = SoundPlayer(robot=robot)
 
         # Wake word detector
         try:
@@ -160,6 +166,7 @@ class CompanionApp:
 
             except Exception as e:
                 logger.error(f"Error in state {state.name}: {e}", exc_info=True)
+                await self._sound_player.play_error()
                 try:
                     self._sm.send_event(Event.ERROR)
                 except ValueError:
@@ -192,8 +199,9 @@ class CompanionApp:
             self._sm.send_event(Event.ERROR)
             return
 
-        # Wake up animation
+        # Wake up animation + sound
         await self._controller.wake_up(self.config.robot.wake_up_duration)
+        await self._sound_player.play_wake_up()
 
         # Start cost tracking session
         await self._cost_tracker.start_session()
@@ -281,7 +289,8 @@ class CompanionApp:
         """COOLDOWN: Disconnect, sleep animation, wait."""
         from reachy_mini_companion.state_machine import Event
 
-        # Sleep animation
+        # Sleep sound + animation
+        await self._sound_player.play_sleep()
         await self._controller.go_to_sleep(self.config.robot.sleep_duration)
 
         # Wait cooldown period
