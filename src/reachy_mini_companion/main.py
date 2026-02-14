@@ -42,6 +42,8 @@ def setup_logging(level: str, log_file: str | None = None) -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         handlers=handlers,
     )
+    # Suppress noisy SDK warning about non-data parts in native audio responses
+    logging.getLogger("google_genai.types").setLevel(logging.ERROR)
 
 
 def launch_setup_wizard(config: AppConfig) -> None:
@@ -76,6 +78,11 @@ class CompanionApp:
         self._wake_detector = None
         self._sound_player = None
         self._robot = None
+
+        # Dashboard components (simulate mode only)
+        self._dashboard_state = None
+        self._audio_handler = None
+        self._dashboard_stream = None
 
     async def setup(self) -> None:
         """Initialize all components."""
@@ -134,9 +141,91 @@ class CompanionApp:
             logger.warning(f"Wake word detection unavailable: {e}")
             self._wake_detector = None
 
+        # Dashboard for simulate mode
+        if self.config.reachy.simulate:
+            self._init_dashboard()
+
         # Transition to SLEEPING
         self._sm.send_event(Event.SETUP_COMPLETE)
         logger.info("Setup complete. Entering SLEEPING state.")
+
+    def _init_dashboard(self) -> None:
+        """Initialize dashboard components for simulate mode."""
+        try:
+            from reachy_mini_companion.web.audio_handler import WebAudioHandler
+            from reachy_mini_companion.web.dashboard import DashboardState
+
+            self._dashboard_state = DashboardState()
+            self._audio_handler = WebAudioHandler()
+
+            # Track WebRTC audio connection state
+            def on_audio_connection(connected: bool):
+                self._dashboard_state.audio_connected = connected
+
+            self._audio_handler.set_connection_callback(on_audio_connection)
+
+            # Update dashboard state on state transitions
+            original_cb = self._sm._on_transition
+
+            def on_transition(old_state, event, new_state):
+                from reachy_mini_companion.state_machine import State
+
+                self._dashboard_state.update_state(new_state.name)
+                # Show progress detail for each state
+                detail_map = {
+                    State.SLEEPING: "",
+                    State.WAKING: "Waking up...",
+                    State.ACTIVE: "Connecting to Gemini...",
+                    State.COOLDOWN: "Session ending...",
+                }
+                self._dashboard_state.detail = detail_map.get(new_state, "")
+                if original_cb:
+                    original_cb(old_state, event, new_state)
+
+            self._sm._on_transition = on_transition
+
+            # Wrap tool dispatcher to track expressions/look on dashboard
+            original_handle = self._dispatcher.handle
+
+            async def wrapped_handle(name, args):
+                result = await original_handle(name, args)
+                if name == "robot_expression":
+                    self._dashboard_state.update_expression(args.get("action", ""))
+                elif name == "robot_look_at":
+                    self._dashboard_state.update_look(args.get("direction", ""))
+                return result
+
+            self._dispatcher.handle = wrapped_handle
+
+            logger.info("Dashboard components initialized")
+        except ImportError as e:
+            logger.warning(f"Dashboard unavailable: {e}")
+            self._dashboard_state = None
+            self._audio_handler = None
+
+    def _launch_dashboard(self) -> None:
+        """Launch the Gradio dashboard for simulate mode."""
+        from reachy_mini_companion.state_machine import Event, State
+        from reachy_mini_companion.web.dashboard import create_dashboard
+
+        def on_wake():
+            if self._sm.state == State.SLEEPING:
+                self._sm.send_event(Event.WAKE_WORD_DETECTED)
+                return "Waking up..."
+            return f"Cannot wake from {self._sm.state.name}"
+
+        self._dashboard_stream = create_dashboard(
+            self._audio_handler, self._dashboard_state, on_wake
+        )
+        self._dashboard_stream.launch(
+            server_name=self.config.web_ui.host,
+            server_port=self.config.web_ui.port,
+            share=False,
+            prevent_thread_lock=True,
+        )
+        logger.info(
+            f"Dashboard launched at http://{self.config.web_ui.host}:{self.config.web_ui.port}"
+        )
 
     async def run(self) -> None:
         """Run the main application loop."""
@@ -146,6 +235,28 @@ class CompanionApp:
         loop = asyncio.get_event_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
             loop.add_signal_handler(sig, self._handle_shutdown)
+
+        # Suppress noisy aioice errors during WebRTC teardown
+        _default_handler = loop.get_exception_handler()
+
+        def _quiet_exception_handler(loop, context):
+            msg = context.get("message", "")
+            if "sendto" in msg or "Transaction" in str(context.get("handle", "")):
+                logger.debug("Suppressed aioice teardown error")
+                return
+            if _default_handler:
+                _default_handler(loop, context)
+            else:
+                loop.default_exception_handler(context)
+
+        loop.set_exception_handler(_quiet_exception_handler)
+
+        # Launch dashboard in simulate mode
+        if self._dashboard_state is not None:
+            try:
+                self._launch_dashboard()
+            except Exception as e:
+                logger.warning(f"Dashboard unavailable: {e}")
 
         logger.info("Starting main loop...")
 
@@ -181,9 +292,10 @@ class CompanionApp:
     async def _handle_sleeping(self) -> None:
         """SLEEPING: Monitor mic for wake word."""
         if self._wake_detector is None:
-            # No wake word detector - wait for shutdown
-            logger.info("No wake word detector. Use Ctrl+C to exit.")
-            await asyncio.sleep(1.0)
+            if self._dashboard_state is None:
+                logger.info("No wake word detector. Use Ctrl+C to exit.")
+            # Poll quickly so the dashboard Wake button is responsive
+            await asyncio.sleep(0.2)
             return
 
         # In a real deployment, this would read from robot mic
@@ -194,8 +306,33 @@ class CompanionApp:
         # which would be driven by the audio capture loop
 
     async def _handle_waking(self) -> None:
-        """WAKING: Check budget, wake up robot, connect Gemini."""
+        """WAKING: Check budget, validate API key, wake up robot, connect Gemini."""
         from reachy_mini_companion.state_machine import Event
+
+        # Clear previous errors and transcript on new wake attempt
+        if self._dashboard_state is not None:
+            self._dashboard_state.clear_error()
+            self._dashboard_state.clear_transcript()
+            self._dashboard_state.detail = "Validating API key..."
+
+        # Validate API key before attempting connection
+        try:
+            from google import genai
+
+            client = genai.Client(api_key=self.config.google_api_key)
+            await asyncio.to_thread(lambda: next(iter(client.models.list()), None))
+            logger.info("Gemini API key validated")
+        except Exception as e:
+            error_msg = (
+                f"Invalid Gemini API key: {e}\n"
+                "Check your GOOGLE_API_KEY in .env file. "
+                "Get a valid key at https://aistudio.google.com/apikey"
+            )
+            logger.error(error_msg)
+            if self._dashboard_state is not None:
+                self._dashboard_state.set_error(error_msg)
+            self._sm.send_event(Event.ERROR)
+            return
 
         # Check budget
         if not await self._cost_tracker.check_budget():
@@ -212,6 +349,23 @@ class CompanionApp:
 
         self._sm.send_event(Event.SESSION_READY)
 
+    @staticmethod
+    def _is_api_key_error(error: Exception) -> bool:
+        """Check if an exception is likely caused by an invalid API key."""
+        error_str = str(error).lower()
+        api_key_indicators = [
+            "api key",
+            "api_key",
+            "invalid key",
+            "unauthenticated",
+            "permission denied",
+            "403",
+            "401",
+            "authentication",
+            "credentials",
+        ]
+        return any(indicator in error_str for indicator in api_key_indicators)
+
     async def _handle_active(self) -> None:
         """ACTIVE: Run Gemini session with audio I/O."""
         from reachy_mini_companion.conversation.gemini_session import GeminiSession
@@ -225,15 +379,34 @@ class CompanionApp:
         )
         session_start = time.monotonic()
 
+        on_transcript = None
+        on_status = None
+        if self._dashboard_state is not None:
+            on_transcript = self._dashboard_state.append_transcript
+
+            def on_status(status: str):
+                detail_map = {
+                    "connecting": "Connecting to Gemini...",
+                    "connected": "Connected — speak now!",
+                    "reconnecting": "Reconnecting...",
+                }
+                self._dashboard_state.detail = detail_map.get(status, status)
+
         gemini = GeminiSession(
             config=self.config,
             tool_declarations=self._tool_declarations,
             on_tool_call=self._dispatcher.handle,
+            on_transcript=on_transcript,
+            on_status=on_status,
         )
+
+        # Attach web audio handler for dashboard mode
+        if self._audio_handler is not None:
+            self._audio_handler.attach(gemini)
 
         try:
             async with asyncio.TaskGroup() as tg:
-                # Run Gemini session
+                # Run Gemini session (handles reconnection internally)
                 tg.create_task(gemini.run(session_stop))
 
                 # Run audio bridge if robot is connected
@@ -251,7 +424,28 @@ class CompanionApp:
 
         except Exception as e:
             if not isinstance(e, asyncio.CancelledError):
-                logger.error(f"Session error: {e}")
+                # Unwrap TaskGroup ExceptionGroup to get the real error
+                root_cause = e
+                if hasattr(e, "exceptions"):
+                    exceptions = e.exceptions
+                    if exceptions:
+                        root_cause = exceptions[0]
+
+                error_msg = str(root_cause)
+                if self._is_api_key_error(root_cause):
+                    error_msg = (
+                        f"Gemini API key error: {root_cause}\n"
+                        "Please check your GOOGLE_API_KEY in .env file. "
+                        "Get a valid key at https://aistudio.google.com/apikey"
+                    )
+                    logger.error(error_msg)
+                else:
+                    logger.error(f"Session error: {root_cause}")
+                if self._dashboard_state is not None:
+                    self._dashboard_state.set_error(error_msg)
+        finally:
+            if self._audio_handler is not None:
+                self._audio_handler.detach()
 
         # End cost tracking
         await self._cost_tracker.end_session()

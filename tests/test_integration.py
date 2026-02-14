@@ -71,8 +71,10 @@ async def test_companion_app_setup(tmp_path):
     await app.cleanup()
 
 
-async def test_companion_app_waking(tmp_path):
+async def test_companion_app_waking(tmp_path, monkeypatch):
     """WAKING state should transition to ACTIVE on success."""
+    from unittest.mock import MagicMock
+
     from reachy_mini_companion.main import CompanionApp
 
     config = AppConfig(google_api_key="test-key")
@@ -81,6 +83,11 @@ async def test_companion_app_waking(tmp_path):
 
     app = CompanionApp(config)
     await app.setup()
+
+    # Mock API key validation to skip real network call
+    mock_client = MagicMock()
+    mock_client.models.list.return_value = iter([MagicMock()])
+    monkeypatch.setattr("google.genai.Client", lambda **kwargs: mock_client)
 
     # Manually set to WAKING state
     app._sm.send_event(Event.WAKE_WORD_DETECTED)
