@@ -32,6 +32,9 @@ wake-openwakeword = [
 wake-edge-impulse = [
     "edge_impulse_linux>=1.0.0",
 ]
+dashboard = [
+    "fastrtc[vad]>=0.0.10",
+]
 all = [
     "reachy-mini-companion[robot,wake-edge-impulse]",
 ]
