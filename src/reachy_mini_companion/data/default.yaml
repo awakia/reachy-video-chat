@@ -1,0 +1,49 @@
+reachy:
+  connection_mode: "auto"  # "auto", "localhost", or "network"
+  simulate: false
+
+wake:
+  backend: "edge_impulse"  # "edge_impulse" or "openwakeword"
+  model: "hey_reachy"  # model name (openwakeword: builtin name, edge_impulse: ignored)
+  custom_model_path: null  # path to custom .onnx/.tflite/.eim (auto-downloads if null)
+  threshold: 0.7
+  refractory_sec: 3.0
+
+gemini:
+  model: "gemini-2.5-flash-native-audio-preview-12-2025"
+  voice: "Aoede"
+  input_sample_rate: 16000
+  output_sample_rate: 24000
+
+session:
+  max_duration_sec: 300
+  silence_timeout_sec: 15
+  cooldown_sec: 5
+  silence_rms_threshold: 200
+
+prompt:
+  default_profile: "default"
+  profiles_dir: ""  # empty = use bundled profiles; set path for custom profiles
+
+robot:
+  wake_up_duration: 1.0
+  sleep_duration: 1.5
+  expression_speed: 1.0
+
+cost:
+  db_path: ""  # empty = ~/.reachy-mini-companion/cost.db
+  daily_budget_usd: 1.00
+  pricing:
+    input_audio_per_million: 0.70
+    output_audio_per_million: 7.00
+    input_text_per_million: 0.15
+    output_text_per_million: 0.60
+
+web_ui:
+  enabled: true
+  port: 7860
+  host: "0.0.0.0"
+
+logging:
+  level: "INFO"
+  file: ""  # empty = ~/.reachy-mini-companion/companion.log

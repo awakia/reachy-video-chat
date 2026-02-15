@@ -7,9 +7,9 @@ env/
 # Config overrides
 config/config.yaml
 
-# Data
-data/
-logs/
+# Runtime data (user-generated, not package data)
+/data/
+/logs/
 
 # Models
 models/
