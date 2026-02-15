@@ -11,10 +11,14 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "default.yaml"
-USER_CONFIG_PATH = PROJECT_ROOT / "config" / "config.yaml"
-ENV_PATH = PROJECT_ROOT / ".env"
+PACKAGE_DIR = Path(__file__).resolve().parent
+DATA_DIR = PACKAGE_DIR / "data"
+DEFAULT_CONFIG_PATH = DATA_DIR / "default.yaml"
+
+# User-writable paths (outside the package)
+USER_DATA_DIR = Path.home() / ".reachy-mini-companion"
+USER_CONFIG_PATH = USER_DATA_DIR / "config.yaml"
+ENV_PATH = USER_DATA_DIR / ".env"
 
 
 class SecretSettings(BaseSettings):
@@ -27,6 +31,32 @@ class SecretSettings(BaseSettings):
     )
 
     google_api_key: str = ""
+
+
+def resolve_profiles_dir(profiles_dir: str) -> Path:
+    """Resolve profiles directory: empty string uses bundled data."""
+    if profiles_dir:
+        p = Path(profiles_dir)
+        return p if p.is_absolute() else USER_DATA_DIR / p
+    return DATA_DIR / "profiles"
+
+
+def resolve_db_path(db_path: str) -> str:
+    """Resolve cost database path: empty string uses USER_DATA_DIR."""
+    if db_path:
+        return db_path
+    path = USER_DATA_DIR / "cost.db"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return str(path)
+
+
+def resolve_log_file(log_file: str) -> str | None:
+    """Resolve log file path: empty string uses USER_DATA_DIR."""
+    if log_file:
+        return log_file
+    path = USER_DATA_DIR / "companion.log"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return str(path)
 
 
 # --- Nested config sections ---
@@ -61,7 +91,7 @@ class SessionConfig(BaseModel):
 
 class PromptConfig(BaseModel):
     default_profile: str = "default"
-    profiles_dir: str = "profiles"
+    profiles_dir: str = ""  # empty = use bundled DATA_DIR/profiles
 
 
 class RobotConfig(BaseModel):
@@ -78,7 +108,7 @@ class PricingConfig(BaseModel):
 
 
 class CostConfig(BaseModel):
-    db_path: str = "data/cost.db"
+    db_path: str = ""  # empty = use USER_DATA_DIR/cost.db
     daily_budget_usd: float = 1.00
     pricing: PricingConfig = Field(default_factory=PricingConfig)
 
@@ -91,7 +121,7 @@ class WebUIConfig(BaseModel):
 
 class LoggingConfig(BaseModel):
     level: str = "INFO"
-    file: str = "logs/companion.log"
+    file: str = ""  # empty = use USER_DATA_DIR/companion.log
 
 
 class AppConfig(BaseModel):
@@ -162,7 +192,7 @@ def load_config(config_path: str | Path | None = None) -> AppConfig:
 
 def save_api_key(key: str) -> None:
     """Write API key to .env file with restricted permissions."""
-    ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
+    USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     # Read existing .env content (if any), replace or append key
     lines: list[str] = []
@@ -185,7 +215,7 @@ def save_api_key(key: str) -> None:
 
 def save_config(updates: dict[str, Any]) -> None:
     """Save config updates to user config.yaml."""
-    USER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
     existing = _load_yaml(USER_CONFIG_PATH)
     merged = _deep_merge(existing, updates)
     with open(USER_CONFIG_PATH, "w") as f:

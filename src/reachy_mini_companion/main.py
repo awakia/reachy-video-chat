@@ -8,7 +8,7 @@ import logging
 import signal
 import time
 
-from reachy_mini_companion.config import AppConfig, load_config
+from reachy_mini_companion.config import AppConfig, load_config, resolve_db_path, resolve_log_file
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class CompanionApp:
         self._sm = StateMachine()
 
         # Cost tracking
-        self._cost_db = CostDatabase(self.config.cost.db_path)
+        self._cost_db = CostDatabase(resolve_db_path(self.config.cost.db_path))
         await self._cost_db.initialize()
         self._cost_tracker = CostTracker(self.config, self._cost_db)
 
@@ -533,7 +533,7 @@ def main():
     if args.simulate:
         config.reachy.simulate = True
 
-    setup_logging(args.log_level, config.logging.file)
+    setup_logging(args.log_level, resolve_log_file(config.logging.file))
 
     if args.dry_run:
         logger.info(f"Config loaded: {config}")

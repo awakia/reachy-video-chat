@@ -13,12 +13,12 @@ from pathlib import Path
 
 import numpy as np
 
-from reachy_mini_companion.config import PROJECT_ROOT
+from reachy_mini_companion.config import USER_DATA_DIR
 from reachy_mini_companion.wake.base import BaseWakeWordDetector
 
 logger = logging.getLogger(__name__)
 
-MODELS_DIR = PROJECT_ROOT / "models"
+MODELS_DIR = USER_DATA_DIR / "models"
 
 # HuggingFace Space containing the .eim models
 HF_SPACE = "luisomoreau/hey_reachy_wake_word_detection"

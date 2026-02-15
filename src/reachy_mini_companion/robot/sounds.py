@@ -9,11 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from reachy_mini_companion.config import PROJECT_ROOT
+from reachy_mini_companion.config import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
-SOUNDS_DIR = PROJECT_ROOT / "sounds"
+SOUNDS_DIR = DATA_DIR / "sounds"
 
 
 def _load_wav(path: Path) -> np.ndarray | None:

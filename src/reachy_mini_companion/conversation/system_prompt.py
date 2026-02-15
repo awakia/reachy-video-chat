@@ -4,22 +4,22 @@ from __future__ import annotations
 
 import logging
 
-from reachy_mini_companion.config import PROJECT_ROOT
+from reachy_mini_companion.config import resolve_profiles_dir
 
 logger = logging.getLogger(__name__)
 
 
-def load_system_prompt(profile: str, profiles_dir: str = "profiles") -> str:
+def load_system_prompt(profile: str, profiles_dir: str = "") -> str:
     """Load system prompt from profiles/<name>/instructions.txt.
 
     Args:
         profile: Profile name (e.g., "default", "kids").
-        profiles_dir: Directory containing profile folders.
+        profiles_dir: Directory containing profile folders (empty = bundled).
 
     Returns:
         The system prompt text, or a fallback default.
     """
-    path = PROJECT_ROOT / profiles_dir / profile / "instructions.txt"
+    path = resolve_profiles_dir(profiles_dir) / profile / "instructions.txt"
     if path.exists():
         text = path.read_text(encoding="utf-8").strip()
         logger.info(f"Loaded system prompt from {path} ({len(text)} chars)")
@@ -29,17 +29,17 @@ def load_system_prompt(profile: str, profiles_dir: str = "profiles") -> str:
     return "You are Reachy Mini, a friendly robot companion. Be helpful and concise."
 
 
-def load_enabled_tools(profile: str, profiles_dir: str = "profiles") -> list[str]:
+def load_enabled_tools(profile: str, profiles_dir: str = "") -> list[str]:
     """Load enabled tool names from profiles/<name>/tools.txt.
 
     Args:
         profile: Profile name.
-        profiles_dir: Directory containing profile folders.
+        profiles_dir: Directory containing profile folders (empty = bundled).
 
     Returns:
         List of enabled tool names.
     """
-    path = PROJECT_ROOT / profiles_dir / profile / "tools.txt"
+    path = resolve_profiles_dir(profiles_dir) / profile / "tools.txt"
     if path.exists():
         tools = [
             line.strip()
