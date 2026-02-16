@@ -1,3 +1,16 @@
+---
+title: Reachy Mini AI Companion
+emoji: "\U0001F916"
+colorFrom: blue
+colorTo: purple
+sdk: static
+pinned: false
+short_description: "Hey Reachy" wake-word AI companion powered by Gemini
+tags:
+  - reachy_mini
+  - reachy_mini_python_app
+---
+
 # Reachy Mini AI Companion
 
 "Hey Reachy" wake-word triggered conversational AI companion for [Reachy Mini](https://www.pollen-robotics.com/reachy-mini/).

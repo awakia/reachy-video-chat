@@ -9,6 +9,7 @@ description = "Hey Reachy - wake-word triggered AI companion for Reachy Mini"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
+keywords = ["reachy-mini-app"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
@@ -27,13 +28,11 @@ dependencies = [
     "numpy>=1.24",
     "python-dotenv>=1.0",
     "soxr>=0.3",
+    "reachy-mini>=1.2.11",
+    "sounddevice>=0.4",
 ]
 
 [project.optional-dependencies]
-robot = [
-    "reachy-mini>=0.1.0",
-    "sounddevice>=0.4",
-]
 wake-openwakeword = [
     "openwakeword>=0.6.0",
 ]
@@ -44,7 +43,7 @@ dashboard = [
     "fastrtc[vad]>=0.0.10",
 ]
 all = [
-    "reachy-mini-companion[robot,wake-edge-impulse]",
+    "reachy-mini-companion[wake-edge-impulse]",
 ]
 dev = [
     "pytest>=7.0",
@@ -58,6 +57,9 @@ Repository = "https://github.com/awakia/reachy-video-chat"
 
 [project.scripts]
 reachy-mini-companion = "reachy_mini_companion.main:main"
+
+[project.entry-points."reachy_mini_apps"]
+reachy_mini_companion = "reachy_mini_companion.main:ReachyMiniCompanionApp"
 
 [tool.setuptools.packages.find]
 where = ["src"]

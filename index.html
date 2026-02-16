@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reachy Mini AI Companion</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Reachy Mini AI Companion</h1>
+      <p class="subtitle">"Hey Reachy" wake-word conversational AI powered by Gemini</p>
+    </header>
+
+    <section class="description">
+      <p>
+        A voice-activated AI companion for
+        <a href="https://www.pollen-robotics.com/reachy-mini/" target="_blank">Reachy Mini</a>.
+        Uses <strong>Gemini 2.5 Flash</strong> native audio for real-time voice conversations
+        with robot expressions, gestures, and automatic session reconnection.
+      </p>
+    </section>
+
+    <section class="features">
+      <h2>Features</h2>
+      <ul>
+        <li><strong>Voice conversations</strong> &mdash; bidirectional audio via Gemini Live API</li>
+        <li><strong>Wake word detection</strong> &mdash; "Hey Reachy" using Edge Impulse</li>
+        <li><strong>Robot expressions</strong> &mdash; nods, shakes, looks, and gestures via function calling</li>
+        <li><strong>Session reconnection</strong> &mdash; automatic reconnect with context preservation</li>
+        <li><strong>Cost tracking</strong> &mdash; per-session cost estimation with daily budget limits</li>
+        <li><strong>Personality profiles</strong> &mdash; customizable system prompts per persona</li>
+        <li><strong>Simulate mode</strong> &mdash; web dashboard with WebRTC audio for development</li>
+      </ul>
+    </section>
+
+    <section class="install">
+      <h2>Installation</h2>
+      <h3>From the Reachy Mini Dashboard</h3>
+      <p>Install directly from the app store on your Reachy Mini dashboard with one click.</p>
+
+      <h3>Manual Install</h3>
+      <pre><code>pip install reachy-mini-companion</code></pre>
+      <p>Or from source:</p>
+      <pre><code>git clone https://github.com/awakia/reachy-video-chat.git
+cd reachy-video-chat
+pip install -e ".[dev]"</code></pre>
+    </section>
+
+    <section class="links">
+      <h2>Links</h2>
+      <ul>
+        <li><a href="https://github.com/awakia/reachy-video-chat" target="_blank">GitHub Repository</a></li>
+        <li><a href="https://www.pollen-robotics.com/reachy-mini/" target="_blank">Reachy Mini by Pollen Robotics</a></li>
+        <li><a href="https://aistudio.google.com/apikey" target="_blank">Get a Gemini API Key</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>MIT License</p>
+    </footer>
+  </div>
+</body>
+</html>

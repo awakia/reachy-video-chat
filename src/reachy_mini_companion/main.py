@@ -78,14 +78,20 @@ class CompanionApp:
         self._wake_detector = None
         self._sound_player = None
         self._robot = None
+        self._owns_robot = False  # True if we created the robot connection
 
         # Dashboard components (simulate mode only)
         self._dashboard_state = None
         self._audio_handler = None
         self._dashboard_stream = None
 
-    async def setup(self) -> None:
-        """Initialize all components."""
+    async def setup(self, robot=None) -> None:
+        """Initialize all components.
+
+        Args:
+            robot: Pre-connected ReachyMini instance (e.g. from SDK daemon).
+                   If None, connects internally when not in simulate mode.
+        """
         from reachy_mini_companion.cost.db import CostDatabase
         from reachy_mini_companion.cost.tracker import CostTracker
         from reachy_mini_companion.robot.controller import MovementController
@@ -102,8 +108,12 @@ class CompanionApp:
         self._cost_tracker = CostTracker(self.config, self._cost_db)
 
         # Robot connection
-        robot = None
-        if not self.config.reachy.simulate:
+        if robot is not None:
+            # Pre-connected robot from SDK daemon (ReachyMiniApp mode)
+            self._robot = robot
+            self._owns_robot = False
+            logger.info("Using pre-connected robot from SDK daemon")
+        elif not self.config.reachy.simulate:
             try:
                 from reachy_mini import ReachyMini
 
@@ -111,6 +121,7 @@ class CompanionApp:
                 robot = ReachyMini(connection_mode=mode)
                 robot.__enter__()
                 self._robot = robot
+                self._owns_robot = True
                 logger.info(f"Connected to Reachy Mini (connection_mode={mode})")
             except Exception as e:
                 logger.warning(f"Could not connect to robot: {e}. Running in simulate mode.")
@@ -504,7 +515,7 @@ class CompanionApp:
         """Clean up resources."""
         logger.info("Cleaning up...")
 
-        if self._robot:
+        if self._robot and self._owns_robot:
             try:
                 self._robot.__exit__(None, None, None)
             except Exception:
@@ -548,6 +559,57 @@ def main():
 
     logger.info("API key found, starting companion...")
     asyncio.run(run_app(config))
+
+
+async def run_app_with_robot(config: AppConfig, robot, thread_stop) -> None:
+    """Run the companion using a pre-connected robot and threading stop event.
+
+    Used by ReachyMiniCompanionApp when launched from the Reachy Mini dashboard.
+    """
+    import threading
+
+    app = CompanionApp(config)
+    await app.setup(robot=robot)
+
+    async def watch_stop():
+        assert isinstance(thread_stop, threading.Event)
+        while not thread_stop.is_set():
+            await asyncio.sleep(0.5)
+        app.shutdown_event.set()
+
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(watch_stop())
+        tg.create_task(app.run())
+
+
+# ---------------------------------------------------------------------------
+# Reachy Mini Apps entry point (dashboard integration)
+# ---------------------------------------------------------------------------
+try:
+    import threading
+
+    from reachy_mini import ReachyMini
+    from reachy_mini.reachy_mini_app import ReachyMiniApp
+
+    class ReachyMiniCompanionApp(ReachyMiniApp):
+        """Reachy Mini Apps entry point for the companion."""
+
+        custom_app_url = "http://0.0.0.0:7860/"
+
+        def run(self, reachy_mini: ReachyMini, stop_event: threading.Event) -> None:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            config = load_config()
+            setup_logging(config.logging.level, resolve_log_file(config.logging.file))
+
+            loop.run_until_complete(
+                run_app_with_robot(config, reachy_mini, stop_event)
+            )
+
+except ImportError:
+    # reachy-mini not installed — dashboard entry point unavailable, CLI still works
+    pass
 
 
 if __name__ == "__main__":
