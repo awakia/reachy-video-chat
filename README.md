@@ -5,7 +5,7 @@ colorFrom: blue
 colorTo: purple
 sdk: static
 pinned: false
-short_description: "Hey Reachy" wake-word AI companion powered by Gemini
+short_description: Hey Reachy wake-word AI companion powered by Gemini
 tags:
   - reachy_mini
   - reachy_mini_python_app
