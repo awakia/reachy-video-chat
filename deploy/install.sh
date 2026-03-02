@@ -2,7 +2,7 @@
 # Install reachy-mini-companion on a Reachy Mini robot.
 #
 # Usage:
-#   ssh bedrock@reachy-mini.local
+#   ssh pollen@reachy-mini.local  (password: root)
 #   curl -fsSL https://raw.githubusercontent.com/awakia/reachy-video-chat/main/deploy/install.sh | bash
 #
 # Or from a local clone:
