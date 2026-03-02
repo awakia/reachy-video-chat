@@ -80,6 +80,10 @@ class CompanionApp:
         self._robot = None
         self._owns_robot = False  # True if we created the robot connection
 
+        # Wake word classifier task (runs during SLEEPING)
+        self._classifier_task: asyncio.Task | None = None
+        self._classifier_stop: asyncio.Event | None = None
+
         # Dashboard components (simulate mode only)
         self._dashboard_state = None
         self._audio_handler = None
@@ -309,13 +313,46 @@ class CompanionApp:
             await asyncio.sleep(0.2)
             return
 
+        # Start the Edge Impulse classifier in the background (once)
+        if self._classifier_task is None or self._classifier_task.done():
+            from reachy_mini_companion.state_machine import Event, State
+
+            self._classifier_stop = asyncio.Event()
+
+            def on_wake_detected():
+                logger.info("Wake word callback fired")
+                if self._sm.state == State.SLEEPING:
+                    self._sm.send_event(Event.WAKE_WORD_DETECTED)
+                    # Stop classifier so it doesn't keep listening during ACTIVE
+                    if self._classifier_stop:
+                        self._classifier_stop.set()
+
+            self._classifier_task = asyncio.create_task(
+                self._wake_detector.run_classifier(on_wake_detected, self._classifier_stop)
+            )
+            logger.info("Wake word classifier started")
+
         # Idle breathing animation (~4s per cycle) so users can tell the
         # robot is alive and listening for the wake word.
         await self._controller.idle_breathing()
 
+    async def _stop_classifier(self) -> None:
+        """Stop the wake word classifier if running."""
+        if self._classifier_stop:
+            self._classifier_stop.set()
+        if self._classifier_task and not self._classifier_task.done():
+            try:
+                await asyncio.wait_for(self._classifier_task, timeout=3.0)
+            except (asyncio.TimeoutError, Exception):
+                self._classifier_task.cancel()
+            self._classifier_task = None
+
     async def _handle_waking(self) -> None:
         """WAKING: Check budget, validate API key, wake up robot, connect Gemini."""
         from reachy_mini_companion.state_machine import Event
+
+        # Stop the wake word classifier
+        await self._stop_classifier()
 
         # Clear previous errors and transcript on new wake attempt
         if self._dashboard_state is not None:
