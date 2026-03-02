@@ -149,7 +149,7 @@ class MovementController:
             return
 
         try:
-            from reachy_mini import create_head_pose
+            from reachy_mini.utils import create_head_pose
 
             head_pose = create_head_pose(**(head_kwargs or {}), degrees=True)
             ant_deg = antennas or [0, 0]
