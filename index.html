@@ -41,8 +41,9 @@
       <p>Install directly from the app store on your Reachy Mini dashboard with one click.</p>
 
       <h3>Manual Install</h3>
-      <pre><code>pip install reachy-mini-companion</code></pre>
-      <p>Or from source:</p>
+      <p>SSH into the robot and run:</p>
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/awakia/reachy-video-chat/main/deploy/install.sh | bash</code></pre>
+      <p>Or from source (for development):</p>
       <pre><code>git clone https://github.com/awakia/reachy-video-chat.git
 cd reachy-video-chat
 pip install -e ".[dev]"</code></pre>

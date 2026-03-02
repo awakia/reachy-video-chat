@@ -54,30 +54,25 @@ reachy-mini-companion --simulate
 
 ### Deploy to Reachy Mini
 
-```bash
-# SSH into the robot
-ssh bedrock@reachy-mini.local
+**From the Dashboard** — find "reachy_video_chat" in the Reachy Mini dashboard's app store and click Install.
 
-# One-line install (clones repo, installs deps, sets up systemd service)
+**Manual install:**
+
+```bash
+ssh pollen@reachy-mini.local  # password: root
+
+# One-line install (clones repo, installs into apps venv)
 curl -fsSL https://raw.githubusercontent.com/awakia/reachy-video-chat/main/deploy/install.sh | bash
 ```
 
 The installer will:
 1. Clone the repository to `~/reachy-mini-companion`
-2. Create a Python virtual environment and install dependencies
+2. Install into the shared apps venv (`/venvs/apps_venv/`)
 3. Prompt for your Gemini API key (saved to `~/.reachy-mini-companion/.env`)
-4. Install and start a systemd service for auto-start on boot
 
-After installation:
+After installation, the app appears in the Reachy Mini dashboard. If not, restart the daemon:
 ```bash
-# Check status
-sudo systemctl status reachy-mini-companion
-
-# View logs
-journalctl -u reachy-mini-companion -f
-
-# Restart after config changes
-sudo systemctl restart reachy-mini-companion
+sudo systemctl restart reachy-mini-daemon
 ```
 
 ## Configuration

@@ -116,6 +116,27 @@ class MovementController:
             duration=duration,
         )
 
+    async def idle_breathing(self) -> None:
+        """Subtle breathing animation for sleep/idle state.
+
+        Antenna and head micro-movement so users can tell the robot is alive
+        and listening for the wake word.  One call ≈ 4 seconds.
+        """
+        if self.robot is None:
+            return
+        # Slight raise — like an inhale
+        await self._goto(
+            head_kwargs={"pitch": 23},
+            antennas=[20, 20],
+            duration=2.0,
+        )
+        # Return to sleep pose — like an exhale
+        await self._goto(
+            head_kwargs={"pitch": 25},
+            antennas=[25, 25],
+            duration=2.0,
+        )
+
     async def _goto(
         self,
         head_kwargs: dict | None = None,

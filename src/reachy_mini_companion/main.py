@@ -301,7 +301,7 @@ class CompanionApp:
         await self.cleanup()
 
     async def _handle_sleeping(self) -> None:
-        """SLEEPING: Monitor mic for wake word."""
+        """SLEEPING: Monitor mic for wake word with idle breathing animation."""
         if self._wake_detector is None:
             if self._dashboard_state is None:
                 logger.info("No wake word detector. Use Ctrl+C to exit.")
@@ -309,12 +309,9 @@ class CompanionApp:
             await asyncio.sleep(0.2)
             return
 
-        # In a real deployment, this would read from robot mic
-        # For now, sleep briefly to avoid busy-waiting
-        await asyncio.sleep(0.1)
-
-        # Wake word detection happens via process_audio() calls
-        # which would be driven by the audio capture loop
+        # Idle breathing animation (~4s per cycle) so users can tell the
+        # robot is alive and listening for the wake word.
+        await self._controller.idle_breathing()
 
     async def _handle_waking(self) -> None:
         """WAKING: Check budget, validate API key, wake up robot, connect Gemini."""
