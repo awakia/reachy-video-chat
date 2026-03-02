@@ -59,7 +59,7 @@ Repository = "https://github.com/awakia/reachy-video-chat"
 reachy-mini-companion = "reachy_mini_companion.main:main"
 
 [project.entry-points."reachy_mini_apps"]
-reachy_mini_companion = "reachy_mini_companion.main:ReachyMiniCompanionApp"
+reachy_video_chat = "reachy_mini_companion.main:ReachyMiniCompanionApp"
 
 [tool.setuptools.packages.find]
 where = ["src"]
