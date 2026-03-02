@@ -111,8 +111,8 @@ class MovementController:
             return
 
         await self._goto(
-            head_kwargs={"pitch": 15},
-            antennas=[15, 15],
+            head_kwargs={"pitch": 24, "x": -21, "z": -44, "mm": True},
+            antennas=[175, 175],
             duration=duration,
         )
 
@@ -126,14 +126,14 @@ class MovementController:
             return
         # Slight raise — like an inhale
         await self._goto(
-            head_kwargs={"pitch": 12},
-            antennas=[10, 10],
+            head_kwargs={"pitch": 20, "x": -15, "z": -30, "mm": True},
+            antennas=[160, 160],
             duration=2.0,
         )
         # Return to sleep pose — like an exhale
         await self._goto(
-            head_kwargs={"pitch": 15},
-            antennas=[15, 15],
+            head_kwargs={"pitch": 24, "x": -21, "z": -44, "mm": True},
+            antennas=[175, 175],
             duration=2.0,
         )
 
