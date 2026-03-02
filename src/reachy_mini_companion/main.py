@@ -589,7 +589,7 @@ try:
     import threading
 
     from reachy_mini import ReachyMini
-    from reachy_mini.reachy_mini_app import ReachyMiniApp
+    from reachy_mini.apps.app import ReachyMiniApp
 
     class ReachyMiniCompanionApp(ReachyMiniApp):
         """Reachy Mini Apps entry point for the companion."""
